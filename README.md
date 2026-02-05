@@ -31,23 +31,21 @@ npm start            # http://localhost:3000
 
 ## Why This Stack
 
-### TypeScript + Express (not Python, not a framework)
+### TypeScript + Express
 
-The complexity in this problem is in the **domain logic** (status computation, anomaly detection, idempotency) not in the web framework. Express is the thinnest possible layer. TypeScript gives type safety where it matters: the event model, state transitions, and API contract.
+The complexity is in the **domain logic** (status computation, anomaly detection, idempotency), not the web framework. Express is the thinnest possible layer. TypeScript gives type safety where it matters: the event model, state transitions, and API contract.
 
-### Vanilla HTML + JS (not React)
+### Vanilla HTML + JS
 
-The UI has two views: a transfer list and a detail view. That's a table and a timeline. React would add a build step, a dev server, CORS configuration, and a `node_modules` for a problem that's solved with `fetch()` and `innerHTML`. The spec says "no visual polish required" - the value is in the data, not the framework.
+Two views — a table and a timeline — don't justify a build pipeline. `fetch()` and `innerHTML` are enough. Serving static files from Express means **one command to run everything**: `npm start` serves both the API and the UI on the same port.
 
-Serving static files from Express also means **one command to run everything**: `npm start` serves both the API and the UI on the same port. No separate frontend process.
+### zod
 
-### zod (not manual validation)
+Runtime validation that infers TypeScript types from schemas. One definition, two guarantees: the compiler checks your code, zod checks the incoming payload.
 
-zod gives runtime validation that infers TypeScript types from schemas. One definition, two guarantees: the compiler checks your code, zod checks the incoming payload.
+### vitest
 
-### vitest (not Jest)
-
-Native TypeScript support without Babel/ts-jest configuration. Jest-compatible API, faster execution.
+Native TypeScript support without extra configuration. Jest-compatible API, faster execution.
 
 ---
 
