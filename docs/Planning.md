@@ -172,29 +172,77 @@ GET /transfers?has_warnings=true
 
 ---
 
+## Development Approach: TDD
+
+Tests are written **before** implementation. Each requirement from the spec maps to a test case. The build order is:
+
+```
+1. Scaffolding        → package.json, tsconfig, .gitignore, types, constants
+2. Test fixtures      → tests/helpers.ts (factory functions for events)
+3. All tests (RED)    → status, anomalies, ingestion, API integration
+4. Domain logic       → domain/status.ts, domain/anomalies.ts (make tests GREEN)
+5. Store              → store/memory.ts (make ingestion tests GREEN)
+6. HTTP layer         → routes, index.ts, error middleware, logging (make API tests GREEN)
+7. UI                 → public/ (list + detail views)
+8. Scripts            → setup.sh, run.sh, run_tests.sh, seed.ts
+```
+
+Tests use shared factory fixtures (`tests/helpers.ts`) to avoid duplication. Each test file covers one domain concern. Integration tests use supertest against the Express app (imported without `listen()`).
+
+### Production Practices
+
+- **Type safety**: TypeScript strict mode; zod schemas infer types at the boundary; domain functions accept and return typed interfaces
+- **Constants**: `TERMINAL_STATUSES`, `VALID_STATUSES` defined once in `constants.ts` — no magic strings
+- **Input validation**: zod validates every incoming payload before it reaches domain logic; invalid data never touches the store
+- **Structured logging** (`logger.ts`): request-level (method, path, status, duration) + domain-level (event ingested, state recomputed) with `transfer_id` context
+- **Layered error handling**:
+  - **Validation layer**: zod parse errors → `422` with structured field-level messages
+  - **Domain layer**: not-found → `404`; domain functions return result types, never throw
+  - **Route layer**: try/catch around handler logic → `500` with safe message on unexpected errors
+  - **Global middleware**: Express error handler as the final catch-all — logs full error server-side, returns `{ "error": "Internal server error" }` to client (no stack traces leaked)
+- **Graceful degradation**: anomalies never block event ingestion; data is always stored and flagged for investigation
+
+---
+
 ## Implementation Checklist
 
 ### MVP (Must Have)
 
-- [ ] Project setup: Express + TypeScript, static HTML, setup script
-- [ ] Event model: zod schema with validation
-- [ ] In-memory store: Events + derived transfer state
-- [ ] POST /events: Ingest with idempotency (deduplicate by event_id)
-- [ ] Status computation: Sort by timestamp, derive current status
-- [ ] Anomaly detection: Event-after-terminal, conflicting terminals, missing initiated
-- [ ] GET /transfers/:id: Single transfer with status + warnings + events
-- [ ] GET /transfers: List all transfers with filtering
-- [ ] UI - Transfer list: Table with status, terminal badge, warning indicator, last update
-- [ ] UI - Transfer detail: Event timeline, current status, warnings
-- [ ] Tests: Status computation, idempotency, anomaly detection, out-of-order handling
-- [ ] README: Setup instructions, assumptions, design notes, system design answers
+**Scaffolding**
+- [ ] Project setup: package.json, tsconfig.json, .gitignore, vitest config
+- [ ] Types and constants: types.ts, constants.ts
+- [ ] Validation: zod schemas (validation.ts)
+
+**Tests (written first, all failing)**
+- [ ] Test fixtures: tests/helpers.ts with makeEvent() and makeEvents() factories
+- [ ] Status tests: out-of-order sorting, timestamp tiebreaker, terminal detection, latest-wins
+- [ ] Anomaly tests: event-after-terminal, conflicting terminals, missing initiated, duplicate status, no false positives
+- [ ] Ingestion tests: new event stored (201), duplicate skipped (200), cross-transfer event_id reuse, invalid payload (422)
+- [ ] API integration tests: POST+GET round-trip, list filters, 404 for unknown, response shape contract
+
+**Implementation (make tests pass)**
+- [ ] Domain: status computation (domain/status.ts)
+- [ ] Domain: anomaly detection (domain/anomalies.ts)
+- [ ] Store: in-memory event + transfer store (store/memory.ts)
+- [ ] Routes: POST /events (routes/events.ts)
+- [ ] Routes: GET /transfers, GET /transfers/:id (routes/transfers.ts)
+- [ ] App: Express entry point with JSON parsing, route mounting (index.ts)
+- [ ] Error handling: zod errors → 422, not-found → 404, route-level try/catch → 500, global Express error middleware as catch-all (log server-side, safe response to client)
+- [ ] Logging: structured request logging (method, path, status, duration) + domain logging (event ingested, state recomputed)
+
+**UI**
+- [ ] Transfer list: table with status, terminal badge, warning indicator, last update
+- [ ] Transfer detail: event timeline, current status, warnings, failure reason
+
+**DevOps**
+- [ ] setup.sh, run.sh, run_tests.sh
+- [ ] Seed script: scripts/seed.ts
 
 ### Beyond MVP (Nice to Have)
 
-- [ ] Stuck transfer detection: Flag non-terminal transfers with no event for configurable threshold
-- [ ] Manual resolution: PATCH endpoint to mark transfer as resolved with a note
+- [ ] Stuck transfer detection: flag non-terminal transfers idle for >24h
+- [ ] Manual resolution: PATCH /transfers/:id/resolve with note
 - [ ] Recompute endpoint: POST /transfers/:id/recompute to rebuild state from events
-- [ ] Seed script: Populate with sample data for demo
 - [ ] Docker support: Dockerfile + docker-compose
 
 ---
@@ -227,12 +275,14 @@ archie/
 │   │   └── anomalies.ts           # Anomaly detection rules
 │   ├── store/
 │   │   └── memory.ts              # In-memory event + transfer store
-│   └── validation.ts              # zod schemas
+│   ├── validation.ts              # zod schemas
+│   └── logger.ts                  # Structured logging (request + domain events)
 ├── public/
 │   ├── index.html                 # Single HTML page (list + detail views)
 │   ├── app.js                     # Vanilla JS: fetch API, render DOM
 │   └── style.css                  # Minimal styling
 ├── tests/
+│   ├── helpers.ts                 # Shared factory fixtures (makeEvent, makeEvents)
 │   ├── ingestion.test.ts
 │   ├── status.test.ts
 │   ├── anomalies.test.ts

@@ -132,6 +132,19 @@ GET /transfers?has_warnings=true
 
 ---
 
+## Development Approach
+
+**TDD.** Tests were written before implementation. Each requirement from the spec maps to a test case — status computation, anomaly detection, idempotency, out-of-order handling — all written as failing tests first, then implementation to make them pass. Shared factory fixtures (`tests/helpers.ts`) keep test setup DRY.
+
+**Production practices despite the 3-hour scope:**
+- **Structured logging**: every event ingestion and state recomputation is logged with `transfer_id` context; request-level logging captures method, path, status code, and duration
+- **Layered error handling**: validation errors return `422` with zod's structured error messages; unknown transfer returns `404`; route handlers catch domain errors and return `500` with a safe message; a global Express error middleware is the final catch-all — it logs the full error server-side but returns only `{ "error": "Internal server error" }` to the client (no stack trace leaks)
+- **Input validation at the boundary**: zod validates every incoming payload before it touches domain logic; invalid data never reaches the store or domain layer
+- **Constants, no magic values**: terminal statuses, valid statuses defined once in `constants.ts`
+- **Type safety end-to-end**: TypeScript strict mode, zod schemas infer types at the boundary, domain functions accept and return typed interfaces
+
+---
+
 ## Design Notes
 
 ### How Duplicates Are Handled
@@ -216,12 +229,14 @@ archie/
 │   │   └── anomalies.ts       # Anomaly detection rules
 │   ├── store/
 │   │   └── memory.ts          # In-memory event + transfer store
-│   └── validation.ts          # zod schemas
+│   ├── validation.ts          # zod schemas
+│   └── logger.ts              # Structured logging (request + domain events)
 ├── public/
 │   ├── index.html             # Single HTML page (list + detail views)
 │   ├── app.js                 # Vanilla JS: fetch API, render DOM
 │   └── style.css              # Minimal styling
 ├── tests/
+│   ├── helpers.ts                 # Shared factory fixtures (makeEvent, makeEvents)
 │   ├── ingestion.test.ts
 │   ├── status.test.ts
 │   ├── anomalies.test.ts
@@ -243,6 +258,8 @@ archie/
 
 ## Testing
 
+Built with TDD: tests written first, then implementation to make them pass.
+
 ```bash
 bash run_tests.sh
 # or
@@ -251,10 +268,11 @@ npx vitest run
 
 | Test File | Covers |
 |-----------|--------|
-| `ingestion.test.ts` | Idempotency, duplicate rejection, valid/invalid payloads |
-| `status.test.ts` | Out-of-order resolution, timestamp sorting, terminal detection |
-| `anomalies.test.ts` | Event-after-terminal, conflicting terminals, missing initiated |
-| `api.test.ts` | Full integration via supertest |
+| `helpers.ts` | Shared factory fixtures: `makeEvent()`, `makeEvents()` |
+| `status.test.ts` | Out-of-order resolution, timestamp sorting, tiebreaker, terminal detection |
+| `anomalies.test.ts` | Event-after-terminal, conflicting terminals, missing initiated, duplicate status, no false positives |
+| `ingestion.test.ts` | Idempotency, duplicate rejection, cross-transfer event_id reuse, invalid payloads |
+| `api.test.ts` | Full HTTP integration via supertest: round-trip, filters, 404, response contract |
 
 ---
 
