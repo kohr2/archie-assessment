@@ -2,6 +2,7 @@
 // Creates Express app without starting server (for supertest).
 
 import express, { Express, Request, Response, NextFunction } from "express";
+import path from "path";
 import eventsRouter from "./routes/events";
 import transfersRouter from "./routes/transfers";
 import { logger } from "./logger";
@@ -32,6 +33,9 @@ export function createApp(): Express {
   // Routes
   app.use("/events", eventsRouter);
   app.use("/transfers", transfersRouter);
+
+  // Static files (UI)
+  app.use(express.static(path.join(__dirname, "../public")));
 
   // Global error middleware (catch-all)
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

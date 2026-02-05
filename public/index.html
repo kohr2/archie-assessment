@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transfer Tracker</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- List View -->
+    <div id="list-view">
+      <h1>Transfer Tracker</h1>
+      <div id="loading" class="loading">Loading transfers...</div>
+      <div id="error" class="error" style="display: none;"></div>
+      <table id="transfers-table" style="display: none;">
+        <thead>
+          <tr>
+            <th>Transfer ID</th>
+            <th>Status</th>
+            <th>Terminal</th>
+            <th>Warnings</th>
+            <th>Last Updated</th>
+            <th>Events</th>
+          </tr>
+        </thead>
+        <tbody id="transfers-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Detail View -->
+    <div id="detail-view" style="display: none;">
+      <button id="back-btn" class="back-btn">← Back to List</button>
+      <h1 id="detail-title">Transfer Details</h1>
+      <div id="detail-loading" class="loading">Loading transfer...</div>
+      <div id="detail-error" class="error" style="display: none;"></div>
+      <div id="detail-content" style="display: none;">
+        <div class="status-header">
+          <h2 id="detail-status"></h2>
+          <span id="detail-terminal-badge" class="badge"></span>
+        </div>
+        <div id="detail-warnings" class="warnings-panel"></div>
+        <h3>Event Timeline</h3>
+        <div id="detail-events" class="timeline"></div>
+      </div>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
