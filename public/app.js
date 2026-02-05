@@ -122,6 +122,9 @@ async function loadTransferDetail(transferId) {
     const transfer = await fetchTransfer(transferId);
     loadingEl.style.display = "none";
 
+    // Set page title with transfer ID
+    document.getElementById("detail-title").textContent = `Transfer ID: ${transferId}`;
+
     // Status header
     const statusClass = `status-${transfer.current_status}`;
     document.getElementById("detail-status").textContent = transfer.current_status;
