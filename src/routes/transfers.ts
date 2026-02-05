@@ -8,7 +8,7 @@ import { store } from "../store/memory";
 const router = Router();
 
 router.get("/:id", (req: Request, res: Response) => {
-  const transferId = req.params.id;
+  const transferId = req.params.id as string;
   const transfer = store.getTransfer(transferId);
 
   if (!transfer) {
