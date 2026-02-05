@@ -77,6 +77,16 @@ td {
   background: #f8f9fa;
 }
 
+.transfer-row.recently-updated {
+  background: #fff9e6;
+  border-left: 3px solid #f57c00;
+  transition: background-color 0.3s ease;
+}
+
+.transfer-row.recently-updated:hover {
+  background: #fff3cd;
+}
+
 /* ─── Status Badges ──────────────────────────────────────────────── */
 
 .status {
@@ -224,4 +234,48 @@ td {
 .reason {
   color: #d32f2f;
   font-style: italic;
+}
+
+/* ─── Reload Banner ──────────────────────────────────────────────── */
+
+#reload-banner {
+  display: none;
+  background: #e3f2fd;
+  border: 1px solid #1976d2;
+  color: #1976d2;
+  padding: 10px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+#reload-banner.show {
+  animation: fadeOut 3s ease-in-out forwards;
+}
+
+#reload-banner-detail {
+  display: none;
+  background: #e3f2fd;
+  border: 1px solid #1976d2;
+  color: #1976d2;
+  padding: 10px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+#reload-banner-detail.show {
+  animation: fadeOut 3s ease-in-out forwards;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  66% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }

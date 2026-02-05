@@ -7,6 +7,8 @@ const API_BASE = ""; // Same origin
 
 let currentView = "list";
 let currentTransferId = null;
+let knownVersion = 0;
+let recentlyUpdatedIds = new Set(); // Track transfers updated via live polling
 
 // ─── View Management ───────────────────────────────────────────────
 
@@ -77,9 +79,11 @@ async function loadTransfers() {
       const warningBadge = transfer.has_warnings
         ? '<span class="badge badge-warning">⚠️</span>'
         : "";
+      const isLiveUpdate = recentlyUpdatedIds.has(transfer.transfer_id);
+      const rowClass = isLiveUpdate ? "transfer-row recently-updated" : "transfer-row";
 
       return `
-        <tr class="transfer-row" data-transfer-id="${transfer.transfer_id}">
+        <tr class="${rowClass}" data-transfer-id="${transfer.transfer_id}">
           <td>${transfer.transfer_id}</td>
           <td><span class="status ${statusClass}">${transfer.current_status}</span></td>
           <td>${terminalBadge}</td>
@@ -187,7 +191,81 @@ async function loadTransferDetail(transferId) {
 
 function formatTimestamp(isoString) {
   const date = new Date(isoString);
-  return date.toLocaleString();
+  const now = Date.now();
+  const diffMs = now - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) {
+    return "just now";
+  } else if (diffMins < 60) {
+    return `${diffMins} mn ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours} h ago`;
+  } else {
+    return `${diffDays} d ago`;
+  }
+}
+
+// ─── Version Polling ──────────────────────────────────────────────
+
+async function pollVersion() {
+  try {
+    const res = await fetch(`${API_BASE}/transfers/version`);
+    const data = await res.json();
+    if (knownVersion > 0 && data.version !== knownVersion) {
+      const affectedIds = data.affected_transfer_ids || [];
+      // Track which transfers were updated via live polling
+      affectedIds.forEach((id) => recentlyUpdatedIds.add(id));
+      showReloadBanner(affectedIds);
+      // Clear highlights after 5 seconds
+      setTimeout(() => {
+        affectedIds.forEach((id) => recentlyUpdatedIds.delete(id));
+        if (currentView === "list") {
+          loadTransfers(); // Re-render to remove highlights
+        }
+      }, 5000);
+    }
+    knownVersion = data.version;
+  } catch (_) {
+    /* silent */
+  }
+}
+
+setInterval(pollVersion, 10000);
+
+// ─── Reload Banner ────────────────────────────────────────────────
+
+function showReloadBanner(affectedTransferIds) {
+  if (currentView === "detail" && affectedTransferIds.includes(currentTransferId)) {
+    // Detail view: this specific transfer was affected - auto-refresh
+    loadTransferDetail(currentTransferId);
+    const banner = document.getElementById("reload-banner-detail");
+    const msg = document.getElementById("reload-message-detail");
+    msg.textContent = "Updated — new events processed";
+    banner.style.display = "flex";
+    banner.classList.add("show");
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      banner.classList.remove("show");
+      banner.style.display = "none";
+    }, 3000);
+  } else if (currentView === "list" && affectedTransferIds.length > 0) {
+    // List view: any transfer changed - auto-refresh
+    loadTransfers();
+    const banner = document.getElementById("reload-banner");
+    const msg = document.getElementById("reload-message");
+    msg.textContent = "Data refreshed — status recomputed";
+    banner.style.display = "flex";
+    banner.classList.add("show");
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      banner.classList.remove("show");
+      banner.style.display = "none";
+    }, 3000);
+  }
+  // If in detail view but viewing a different transfer, don't show banner
 }
 
 // ─── Event Handlers ───────────────────────────────────────────────

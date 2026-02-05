@@ -16,6 +16,8 @@ export class MemoryStore {
   private events: Map<string, TransferEvent[]> = new Map();
   private transfers: Map<string, Transfer> = new Map();
   private seenEventIds: Map<string, Set<string>> = new Map(); // transfer_id -> Set<event_id>
+  private version: number = 0;
+  private affectedTransferIds: Set<string> = new Set();
 
   /**
    * Add an event to the store.
@@ -50,6 +52,8 @@ export class MemoryStore {
     const allEvents = this.events.get(transfer_id)!;
     const transfer = computeTransferState(transfer_id, allEvents);
     this.transfers.set(transfer_id, transfer);
+    this.version++;
+    this.affectedTransferIds.add(transfer_id);
 
     return {
       isDuplicate: false,
@@ -89,12 +93,44 @@ export class MemoryStore {
   }
 
   /**
+   * Get the current version (incremented on each new event or recompute).
+   */
+  getVersion(): number {
+    return this.version;
+  }
+
+  /**
+   * Get affected transfer IDs since last poll and clear the set.
+   */
+  getAffectedTransferIds(): string[] {
+    const ids = Array.from(this.affectedTransferIds);
+    this.affectedTransferIds.clear();
+    return ids;
+  }
+
+  /**
+   * Recompute a transfer's state from its event history.
+   */
+  recomputeTransfer(transferId: string): Transfer | undefined {
+    const events = this.events.get(transferId);
+    if (!events || events.length === 0) return undefined;
+
+    const transfer = computeTransferState(transferId, events);
+    this.transfers.set(transferId, transfer);
+    this.version++;
+    this.affectedTransferIds.add(transferId);
+    return transfer;
+  }
+
+  /**
    * Clear all data (for test isolation).
    */
   clear(): void {
     this.events.clear();
     this.transfers.clear();
     this.seenEventIds.clear();
+    this.version = 0;
+    this.affectedTransferIds.clear();
   }
 }
 

@@ -231,8 +231,9 @@ Tests use shared factory fixtures (`tests/helpers.ts`) to avoid duplication. Eac
 - [ ] Logging: structured request logging (method, path, status, duration) + domain logging (event ingested, state recomputed)
 
 **UI**
-- [ ] Transfer list: table with status, terminal badge, warning indicator, last update
-- [ ] Transfer detail: event timeline, current status, warnings, failure reason
+- [ ] Transfer list: table with status, terminal badge, warning indicator, relative timestamp ("X mn ago")
+- [ ] Transfer detail: event timeline with relative timestamps, current status, warnings, failure reason
+- [ ] Auto-refresh: 10s version polling, auto-reloads both views on change, passive banner notification (no CTAs — status is recomputed dynamically on every event ingestion)
 
 **DevOps**
 - [ ] setup.sh, run.sh, run_tests.sh

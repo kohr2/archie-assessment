@@ -9,7 +9,8 @@ Internal tool for tracking money transfer lifecycle. Ingests asynchronous, unord
 ```bash
 # Automated setup + run
 bash setup.sh
-bash run.sh          # http://localhost:3000
+bash run.sh          # http://localhost:3000 (seeds demo data)
+bash stop.sh         # Stop the server
 
 # Run tests
 bash run_tests.sh
@@ -37,7 +38,7 @@ The complexity is in the **domain logic** (status computation, anomaly detection
 
 ### Vanilla HTML + JS
 
-Two views — a table and a timeline — don't justify a build pipeline. `fetch()` and `innerHTML` are enough. Serving static files from Express means **one command to run everything**: `npm start` serves both the API and the UI on the same port.
+Two views — a table and a timeline — don't justify a build pipeline. `fetch()` and `innerHTML` are enough. Serving static files from Express means **one command to run everything**: `npm start` serves both the API and the UI on the same port. The UI polls for version changes every 10 seconds, auto-refreshes both views when new data arrives, and shows relative timestamps ("3 mn ago").
 
 ### zod
 
@@ -248,6 +249,7 @@ archie/
 ├── tsconfig.json
 ├── setup.sh
 ├── run.sh
+├── stop.sh
 ├── run_tests.sh
 ├── .gitignore
 └── README.md
@@ -327,5 +329,9 @@ For polling efficiency, the Orchestrator can use `ETag` / `If-None-Match` header
 |---------|--------|-------------|
 | Stuck transfer detection | Optional | Flag non-terminal transfers idle for >24h |
 | Manual resolution | Optional | PATCH /transfers/:id/resolve with note |
-| Recompute from events | Optional | POST /transfers/:id/recompute |
-| Seed data script | Included | `npx tsx scripts/seed.ts` for demo data |
+| Recompute from events | Included | POST /transfers/:id/recompute |
+| Seed data script | Included | Automatic via `run.sh`, or manually: `npx tsx scripts/seed.ts` |
+| Live auto-refresh | Included | UI polls every 10s, auto-refreshes both views on changes with passive notification |
+| Live update highlighting | Included | Transfers updated via live polling are highlighted for 5 seconds |
+| Relative timestamps | Included | "Updated" column and timeline show "X mn ago" instead of absolute dates |
+| Recent seed data | Included | Seed script generates timestamps relative to now (not hardcoded 2024 dates) |

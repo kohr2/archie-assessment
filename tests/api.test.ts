@@ -164,4 +164,84 @@ describe("API Integration", () => {
     const failedEvent = response.body.events.find((e: any) => e.status === "failed");
     expect(failedEvent.reason).toBe("insufficient_funds");
   });
+
+  it("GET /transfers/version returns version and affected IDs", async () => {
+    // Arrange
+    const event = makeEvent({
+      transfer_id: "tr_version_test",
+      status: "initiated",
+    });
+    await request(app).post("/events").send(event);
+
+    // Act
+    const response = await request(app).get("/transfers/version");
+
+    // Assert
+    expect(response.status).toBe(200);
+    expect(typeof response.body.version).toBe("number");
+    expect(response.body.version).toBeGreaterThan(0);
+    expect(Array.isArray(response.body.affected_transfer_ids)).toBe(true);
+    expect(response.body.affected_transfer_ids).toContain("tr_version_test");
+  });
+
+  it("GET /transfers/version clears affected IDs on subsequent call", async () => {
+    // Arrange
+    const event = makeEvent({
+      transfer_id: "tr_version_clear",
+      status: "initiated",
+    });
+    await request(app).post("/events").send(event);
+
+    // Act
+    const firstResponse = await request(app).get("/transfers/version");
+    const secondResponse = await request(app).get("/transfers/version");
+
+    // Assert
+    expect(firstResponse.body.affected_transfer_ids.length).toBeGreaterThan(0);
+    expect(secondResponse.body.affected_transfer_ids).toHaveLength(0);
+  });
+
+  it("POST /transfers/:id/recompute returns recomputed transfer", async () => {
+    // Arrange
+    const events = happyPath.events;
+    for (const event of events) {
+      await request(app).post("/events").send(event);
+    }
+    const transferId = events[0].transfer_id;
+
+    // Act
+    const response = await request(app).post(`/transfers/${transferId}/recompute`);
+
+    // Assert
+    expect(response.status).toBe(200);
+    expect(response.body.transfer_id).toBe(transferId);
+    expect(response.body.current_status).toBe("settled");
+    expect(response.body.is_terminal).toBe(true);
+  });
+
+  it("POST /transfers/:id/recompute for unknown transfer returns 404", async () => {
+    // Act
+    const response = await request(app).post("/transfers/tr_unknown/recompute");
+
+    // Assert
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBeTruthy();
+  });
+
+  it("POST /transfers/:id/recompute increments version", async () => {
+    // Arrange
+    const event = makeEvent({
+      transfer_id: "tr_recompute_api",
+      status: "initiated",
+    });
+    await request(app).post("/events").send(event);
+    const versionBefore = (await request(app).get("/transfers/version")).body.version;
+
+    // Act
+    await request(app).post("/transfers/tr_recompute_api/recompute");
+    const versionAfter = (await request(app).get("/transfers/version")).body.version;
+
+    // Assert
+    expect(versionAfter).toBe(versionBefore + 1);
+  });
 });

@@ -11,6 +11,9 @@
     <!-- List View -->
     <div id="list-view">
       <h1>Transfer Tracker</h1>
+      <div id="reload-banner" style="display: none;">
+        <span id="reload-message">New data available</span>
+      </div>
       <div id="loading" class="loading">Loading transfers...</div>
       <div id="error" class="error" style="display: none;"></div>
       <table id="transfers-table" style="display: none;">
@@ -20,7 +23,7 @@
             <th>Status</th>
             <th>Terminal</th>
             <th>Warnings</th>
-            <th>Last Updated</th>
+            <th>Updated</th>
             <th>Events</th>
           </tr>
         </thead>
@@ -32,6 +35,9 @@
     <div id="detail-view" style="display: none;">
       <button id="back-btn" class="back-btn">← Back to List</button>
       <h1 id="detail-title">Transfer Details</h1>
+      <div id="reload-banner-detail" style="display: none;">
+        <span id="reload-message-detail">New data available</span>
+      </div>
       <div id="detail-loading" class="loading">Loading transfer...</div>
       <div id="detail-error" class="error" style="display: none;"></div>
       <div id="detail-content" style="display: none;">
