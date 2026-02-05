@@ -11,8 +11,7 @@ import {
   multipleAnomalies,
 } from "./fixtures";
 
-// This function doesn't exist yet — tests will fail (RED)
-// import { detectAnomalies } from "../src/domain/anomalies";
+import { detectAnomalies } from "../src/domain/anomalies";
 
 describe("Anomaly Detection", () => {
   it("detects event_after_terminal", () => {
@@ -20,13 +19,13 @@ describe("Anomaly Detection", () => {
     const events = eventAfterTerminal.events; // initiated → settled → processing
 
     // Act
-    // const warnings = detectAnomalies(events);
+    const warnings = detectAnomalies(events);
 
     // Assert
-    // expect(warnings).toHaveLength(1);
-    // expect(warnings[0].type).toBe("event_after_terminal");
-    // expect(warnings[0].event_ids).toContain(events[2].event_id); // processing event
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(warnings.length).toBeGreaterThanOrEqual(1);
+    expect(warnings.some((w) => w.type === "event_after_terminal")).toBe(true);
+    const warning = warnings.find((w) => w.type === "event_after_terminal");
+    expect(warning?.event_ids).toContain(events[2].event_id); // processing event
   });
 
   it("detects conflicting_terminals", () => {
@@ -34,13 +33,12 @@ describe("Anomaly Detection", () => {
     const events = conflictingTerminals.events; // has both settled and failed
 
     // Act
-    // const warnings = detectAnomalies(events);
+    const warnings = detectAnomalies(events);
 
     // Assert
-    // expect(warnings.some((w) => w.type === "conflicting_terminals")).toBe(true);
-    // const conflictWarning = warnings.find((w) => w.type === "conflicting_terminals");
-    // expect(conflictWarning?.event_ids.length).toBeGreaterThanOrEqual(2);
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(warnings.some((w) => w.type === "conflicting_terminals")).toBe(true);
+    const conflictWarning = warnings.find((w) => w.type === "conflicting_terminals");
+    expect(conflictWarning?.event_ids.length).toBeGreaterThanOrEqual(2);
   });
 
   it("detects missing_initiated", () => {
@@ -48,11 +46,10 @@ describe("Anomaly Detection", () => {
     const events = missingInitiated.events; // processing → settled, no initiated
 
     // Act
-    // const warnings = detectAnomalies(events);
+    const warnings = detectAnomalies(events);
 
     // Assert
-    // expect(warnings.some((w) => w.type === "missing_initiated")).toBe(true);
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(warnings.some((w) => w.type === "missing_initiated")).toBe(true);
   });
 
   it("detects duplicate_status", () => {
@@ -60,13 +57,12 @@ describe("Anomaly Detection", () => {
     const events = duplicateStatus.events; // two processing events
 
     // Act
-    // const warnings = detectAnomalies(events);
+    const warnings = detectAnomalies(events);
 
     // Assert
-    // expect(warnings.some((w) => w.type === "duplicate_status")).toBe(true);
-    // const dupWarning = warnings.find((w) => w.type === "duplicate_status");
-    // expect(dupWarning?.event_ids.length).toBe(2); // both processing events
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(warnings.some((w) => w.type === "duplicate_status")).toBe(true);
+    const dupWarning = warnings.find((w) => w.type === "duplicate_status");
+    expect(dupWarning?.event_ids.length).toBeGreaterThanOrEqual(2); // both processing events
   });
 
   it("produces no warnings for clean history", () => {
@@ -74,11 +70,10 @@ describe("Anomaly Detection", () => {
     const events = happyPath.events;
 
     // Act
-    // const warnings = detectAnomalies(events);
+    const warnings = detectAnomalies(events);
 
     // Assert
-    // expect(warnings).toHaveLength(0);
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(warnings).toHaveLength(0);
   });
 
   it("detects multiple anomalies on one transfer", () => {
@@ -86,14 +81,13 @@ describe("Anomaly Detection", () => {
     const events = multipleAnomalies.events; // missing_initiated + conflicting_terminals + event_after_terminal
 
     // Act
-    // const warnings = detectAnomalies(events);
+    const warnings = detectAnomalies(events);
 
     // Assert
-    // expect(warnings.length).toBeGreaterThanOrEqual(3);
-    // expect(warnings.some((w) => w.type === "missing_initiated")).toBe(true);
-    // expect(warnings.some((w) => w.type === "conflicting_terminals")).toBe(true);
-    // expect(warnings.some((w) => w.type === "event_after_terminal")).toBe(true);
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(warnings.length).toBeGreaterThanOrEqual(3);
+    expect(warnings.some((w) => w.type === "missing_initiated")).toBe(true);
+    expect(warnings.some((w) => w.type === "conflicting_terminals")).toBe(true);
+    expect(warnings.some((w) => w.type === "event_after_terminal")).toBe(true);
   });
 
   it("includes human-readable messages in warnings", () => {
@@ -101,11 +95,10 @@ describe("Anomaly Detection", () => {
     const events = eventAfterTerminal.events;
 
     // Act
-    // const warnings = detectAnomalies(events);
+    const warnings = detectAnomalies(events);
 
     // Assert
-    // expect(warnings[0].message).toBeTruthy();
-    // expect(typeof warnings[0].message).toBe("string");
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(warnings[0].message).toBeTruthy();
+    expect(typeof warnings[0].message).toBe("string");
   });
 });

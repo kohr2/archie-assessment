@@ -5,12 +5,13 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { duplicateEvent } from "./fixtures";
 import { makeEvent } from "./helpers";
 
-// This class doesn't exist yet — tests will fail (RED)
-// import { MemoryStore } from "../src/store/memory";
+import { MemoryStore } from "../src/store/memory";
 
 describe("Event Ingestion", () => {
+  const store = new MemoryStore();
+
   beforeEach(() => {
-    // store.clear(); // Will be needed once store exists
+    store.clear();
   });
 
   it("stores a new event and returns true", () => {
@@ -21,32 +22,33 @@ describe("Event Ingestion", () => {
     });
 
     // Act
-    // const result = store.addEvent(event);
+    const result = store.addEvent(event);
 
     // Assert
-    // expect(result.isDuplicate).toBe(false);
-    // const transfer = store.getTransfer("tr_new");
-    // expect(transfer).toBeDefined();
-    // expect(transfer?.event_count).toBe(1);
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(result.isDuplicate).toBe(false);
+    const transfer = store.getTransfer("tr_new");
+    expect(transfer).toBeDefined();
+    expect(transfer?.event_count).toBe(1);
   });
 
   it("skips duplicate event_id for same transfer and returns true for duplicate", () => {
     // Arrange
     const events = duplicateEvent.events; // Same event_id sent twice
     const firstEvent = events[0];
-    const duplicateEvent = events[2]; // Same event_id as first
+    const secondEvent = events[1];
+    const duplicateEventInstance = events[2]; // Same event_id as first
 
     // Act
-    // const firstResult = store.addEvent(firstEvent);
-    // const duplicateResult = store.addEvent(duplicateEvent);
+    const firstResult = store.addEvent(firstEvent);
+    const secondResult = store.addEvent(secondEvent);
+    const duplicateResult = store.addEvent(duplicateEventInstance);
 
     // Assert
-    // expect(firstResult.isDuplicate).toBe(false);
-    // expect(duplicateResult.isDuplicate).toBe(true);
-    // const transfer = store.getTransfer("tr_idemp");
-    // expect(transfer?.event_count).toBe(2); // Only 2 unique events after dedup
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(firstResult.isDuplicate).toBe(false);
+    expect(secondResult.isDuplicate).toBe(false);
+    expect(duplicateResult.isDuplicate).toBe(true);
+    const transfer = store.getTransfer("tr_idemp");
+    expect(transfer?.event_count).toBe(2); // Only 2 unique events after dedup
   });
 
   it("allows same event_id across different transfers", () => {
@@ -63,16 +65,15 @@ describe("Event Ingestion", () => {
     });
 
     // Act
-    // const result1 = store.addEvent(event1);
-    // const result2 = store.addEvent(event2);
+    const result1 = store.addEvent(event1);
+    const result2 = store.addEvent(event2);
 
     // Assert
     // Both should succeed — event_id uniqueness is scoped per transfer_id
-    // expect(result1.isDuplicate).toBe(false);
-    // expect(result2.isDuplicate).toBe(false);
-    // expect(store.getTransfer("tr_1")?.event_count).toBe(1);
-    // expect(store.getTransfer("tr_2")?.event_count).toBe(1);
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(result1.isDuplicate).toBe(false);
+    expect(result2.isDuplicate).toBe(false);
+    expect(store.getTransfer("tr_1")?.event_count).toBe(1);
+    expect(store.getTransfer("tr_2")?.event_count).toBe(1);
   });
 
   it("recomputes transfer state after adding event", () => {
@@ -88,14 +89,13 @@ describe("Event Ingestion", () => {
     });
 
     // Act
-    // store.addEvent(event1);
-    // store.addEvent(event2);
+    store.addEvent(event1);
+    store.addEvent(event2);
 
     // Assert
-    // const transfer = store.getTransfer("tr_recompute");
-    // expect(transfer?.current_status).toBe("settled");
-    // expect(transfer?.is_terminal).toBe(true);
-    expect(true).toBe(false); // Placeholder — will fail
+    const transfer = store.getTransfer("tr_recompute");
+    expect(transfer?.current_status).toBe("settled");
+    expect(transfer?.is_terminal).toBe(true);
   });
 
   it("handles out-of-order events correctly", () => {
@@ -112,13 +112,12 @@ describe("Event Ingestion", () => {
     });
 
     // Act — add later event first
-    // store.addEvent(laterEvent);
-    // store.addEvent(earlierEvent);
+    store.addEvent(laterEvent);
+    store.addEvent(earlierEvent);
 
     // Assert
-    // const transfer = store.getTransfer("tr_ooo_store");
+    const transfer = store.getTransfer("tr_ooo_store");
     // Status should be from latest timestamp (settled), not last arrival
-    // expect(transfer?.current_status).toBe("settled");
-    expect(true).toBe(false); // Placeholder — will fail
+    expect(transfer?.current_status).toBe("settled");
   });
 });
