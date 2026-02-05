@@ -17,6 +17,7 @@ export class MemoryStore {
   private transfers: Map<string, Transfer> = new Map();
   private seenEventIds: Map<string, Set<string>> = new Map(); // transfer_id -> Set<event_id>
   private arrivalOrderCounters: Map<string, number> = new Map(); // transfer_id -> next arrival order number
+  private rejectedDuplicates: Map<string, string[]> = new Map(); // transfer_id -> rejected event_ids
   private version: number = 0;
   private affectedTransferIds: Set<string> = new Set();
 
@@ -34,7 +35,25 @@ export class MemoryStore {
 
     const seenIds = this.seenEventIds.get(transfer_id)!;
     if (seenIds.has(event_id)) {
-      // Duplicate — return existing transfer state
+      // Duplicate — record it and return existing transfer state with updated rejected_duplicates
+      if (!this.rejectedDuplicates.has(transfer_id)) {
+        this.rejectedDuplicates.set(transfer_id, []);
+      }
+      const rejected = this.rejectedDuplicates.get(transfer_id)!;
+      if (!rejected.includes(event_id)) {
+        rejected.push(event_id);
+        // Update the transfer state to include the new rejected duplicate
+        const existingTransfer = this.transfers.get(transfer_id);
+        if (existingTransfer) {
+          const updatedTransfer: Transfer = {
+            ...existingTransfer,
+            rejected_duplicates: [...rejected],
+          };
+          this.transfers.set(transfer_id, updatedTransfer);
+          this.version++;
+          this.affectedTransferIds.add(transfer_id);
+        }
+      }
       return {
         isDuplicate: true,
         transfer: this.transfers.get(transfer_id),
@@ -63,7 +82,7 @@ export class MemoryStore {
 
     // Recompute transfer state
     const allEvents = this.events.get(transfer_id)!;
-    const transfer = computeTransferState(transfer_id, allEvents);
+    const transfer = computeTransferState(transfer_id, allEvents, this.getRejectedDuplicates(transfer_id));
     this.transfers.set(transfer_id, transfer);
     this.version++;
     this.affectedTransferIds.add(transfer_id);
@@ -122,13 +141,20 @@ export class MemoryStore {
   }
 
   /**
+   * Get rejected duplicate event IDs for a transfer.
+   */
+  getRejectedDuplicates(transferId: string): string[] {
+    return this.rejectedDuplicates.get(transferId) || [];
+  }
+
+  /**
    * Recompute a transfer's state from its event history.
    */
   recomputeTransfer(transferId: string): Transfer | undefined {
     const events = this.events.get(transferId);
     if (!events || events.length === 0) return undefined;
 
-    const transfer = computeTransferState(transferId, events);
+    const transfer = computeTransferState(transferId, events, this.getRejectedDuplicates(transferId));
     this.transfers.set(transferId, transfer);
     this.version++;
     this.affectedTransferIds.add(transferId);
@@ -143,6 +169,7 @@ export class MemoryStore {
     this.transfers.clear();
     this.seenEventIds.clear();
     this.arrivalOrderCounters.clear();
+    this.rejectedDuplicates.clear();
     this.version = 0;
     this.affectedTransferIds.clear();
   }

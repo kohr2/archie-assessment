@@ -32,4 +32,5 @@ export interface Transfer {
   event_count: number;
   warnings: Warning[];
   events: TransferEvent[];
+  rejected_duplicates?: string[]; // Event IDs that were rejected as duplicates
 }

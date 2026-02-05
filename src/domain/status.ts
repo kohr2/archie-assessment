@@ -11,7 +11,8 @@ import { detectAnomalies } from "./anomalies";
  */
 export function computeTransferState(
   transferId: string,
-  events: TransferEvent[]
+  events: TransferEvent[],
+  rejectedDuplicates: string[] = []
 ): Transfer {
   if (events.length === 0) {
     throw new Error(`No events found for transfer ${transferId}`);
@@ -47,5 +48,6 @@ export function computeTransferState(
     event_count: events.length,
     warnings,
     events: sortedEvents,
+    rejected_duplicates: rejectedDuplicates.length > 0 ? rejectedDuplicates : undefined,
   };
 }

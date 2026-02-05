@@ -192,6 +192,23 @@ async function loadTransferDetail(transferId) {
       })
       .join("");
 
+    // Display rejected duplicates if any
+    if (transfer.rejected_duplicates && transfer.rejected_duplicates.length > 0) {
+      const rejectedEl = document.createElement("div");
+      rejectedEl.className = "rejected-duplicates";
+      rejectedEl.style.marginTop = "20px";
+      rejectedEl.style.padding = "10px";
+      rejectedEl.style.backgroundColor = "#f5f5f5";
+      rejectedEl.style.borderRadius = "4px";
+      rejectedEl.innerHTML = `
+        <h4 style="margin: 0 0 8px 0; color: #666; font-size: 14px;">Duplicate attempts (rejected):</h4>
+        <div style="color: #888; font-size: 13px;">
+          ${transfer.rejected_duplicates.map((eventId) => `<code>${eventId}</code>`).join(", ")}
+        </div>
+      `;
+      eventsEl.parentNode?.insertBefore(rejectedEl, eventsEl.nextSibling);
+    }
+
     contentEl.style.display = "block";
   } catch (error) {
     loadingEl.style.display = "none";
