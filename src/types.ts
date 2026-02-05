@@ -6,8 +6,9 @@ export interface TransferEvent {
   transfer_id: string;
   event_id: string;
   status: Status;
-  timestamp: string; // ISO 8601 UTC
+  timestamp: string; // ISO 8601 UTC - event's own timestamp from downstream system
   reason?: string; // Optional, typically present on "failed"
+  arrival_order?: number; // Order in which this event arrived (1st, 2nd, 3rd, etc.)
 }
 
 export interface Warning {

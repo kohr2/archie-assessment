@@ -16,6 +16,7 @@ export class MemoryStore {
   private events: Map<string, TransferEvent[]> = new Map();
   private transfers: Map<string, Transfer> = new Map();
   private seenEventIds: Map<string, Set<string>> = new Map(); // transfer_id -> Set<event_id>
+  private arrivalOrderCounters: Map<string, number> = new Map(); // transfer_id -> next arrival order number
   private version: number = 0;
   private affectedTransferIds: Set<string> = new Set();
 
@@ -45,8 +46,20 @@ export class MemoryStore {
 
     if (!this.events.has(transfer_id)) {
       this.events.set(transfer_id, []);
+      this.arrivalOrderCounters.set(transfer_id, 0);
     }
-    this.events.get(transfer_id)!.push(event);
+    
+    // Track arrival order (increment counter for this transfer)
+    const arrivalOrder = (this.arrivalOrderCounters.get(transfer_id) || 0) + 1;
+    this.arrivalOrderCounters.set(transfer_id, arrivalOrder);
+    
+    // Add arrival_order to track when event was ingested
+    const eventWithMetadata: TransferEvent = {
+      ...event,
+      arrival_order: arrivalOrder,
+    };
+    
+    this.events.get(transfer_id)!.push(eventWithMetadata);
 
     // Recompute transfer state
     const allEvents = this.events.get(transfer_id)!;
@@ -129,6 +142,7 @@ export class MemoryStore {
     this.events.clear();
     this.transfers.clear();
     this.seenEventIds.clear();
+    this.arrivalOrderCounters.clear();
     this.version = 0;
     this.affectedTransferIds.clear();
   }

@@ -162,13 +162,26 @@ async function loadTransferDetail(transferId) {
     }
 
     // Event timeline
+    // Events are always sorted by timestamp (not arrival order) to handle out-of-order events
+    // For tr_ooo specifically, this demonstrates out-of-order handling
     const eventsEl = document.getElementById("detail-events");
+    // Find the Event Timeline h3 (it's a direct child of detail-content, after warnings)
+    const allH3s = contentEl.querySelectorAll("h3");
+    const timelineHeadingEl = Array.from(allH3s).find((h3) => h3.textContent.trim() === "Event Timeline");
+    if (timelineHeadingEl) {
+      // Add note about timestamp-based sorting (especially relevant for out-of-order scenarios)
+      timelineHeadingEl.innerHTML = 'Event Timeline <small style="color: #666; font-weight: normal;">(sorted by timestamp)</small>';
+    }
+
     eventsEl.innerHTML = transfer.events
       .map((event) => {
         const reasonText = event.reason ? ` <span class="reason">(${event.reason})</span>` : "";
+        const arrivalOrderText = event.arrival_order
+          ? `<small class="arrival-order" style="color: #666; display: block; margin-top: 2px;">arrived ${getOrdinalSuffix(event.arrival_order)}</small>`
+          : "";
         return `
           <div class="timeline-item">
-            <div class="timeline-time">${formatTimestamp(event.timestamp)}</div>
+            <div class="timeline-time">${formatAbsoluteTimestamp(event.timestamp)}${arrivalOrderText}</div>
             <div class="timeline-content">
               <span class="status status-${event.status}">${event.status}</span>
               ${reasonText}
@@ -206,6 +219,32 @@ function formatTimestamp(isoString) {
   } else {
     return `${diffDays} d ago`;
   }
+}
+
+function formatAbsoluteTimestamp(isoString) {
+  const date = new Date(isoString);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC`;
+}
+
+function getOrdinalSuffix(n) {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) {
+    return n + "st";
+  }
+  if (j === 2 && k !== 12) {
+    return n + "nd";
+  }
+  if (j === 3 && k !== 13) {
+    return n + "rd";
+  }
+  return n + "th";
 }
 
 // ─── Version Polling ──────────────────────────────────────────────
