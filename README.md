@@ -134,7 +134,7 @@ GET /transfers?has_warnings=true
 
 **TDD.** Tests were written before implementation. Each requirement from the spec maps to a test case — status computation, anomaly detection, idempotency, out-of-order handling — all written as failing tests first, then implementation to make them pass. Shared factory fixtures (`tests/helpers.ts`) keep test setup DRY.
 
-**Production practices despite the 3-hour scope:**
+**Production practices:**
 - **Structured logging**: every event ingestion and state recomputation is logged with `transfer_id` context; request-level logging captures method, path, status code, and duration
 - **Layered error handling**: validation errors return `422` with zod's structured error messages; unknown transfer returns `404`; route handlers catch domain errors and return `500` with a safe message; a global Express error middleware is the final catch-all — it logs the full error server-side but returns only `{ "error": "Internal server error" }` to the client (no stack trace leaks)
 - **Input validation at the boundary**: zod validates every incoming payload before it touches domain logic; invalid data never reaches the store or domain layer
@@ -234,7 +234,8 @@ archie/
 │   ├── app.js                 # Vanilla JS: fetch API, render DOM
 │   └── style.css              # Minimal styling
 ├── tests/
-│   ├── helpers.ts                 # Shared factory fixtures (makeEvent, makeEvents)
+│   ├── helpers.ts                 # Factory functions (makeEvent, makeEvents)
+│   ├── fixtures.ts                # Named scenarios with events + expected outcomes
 │   ├── ingestion.test.ts
 │   ├── status.test.ts
 │   ├── anomalies.test.ts
@@ -266,7 +267,8 @@ npx vitest run
 
 | Test File | Covers |
 |-----------|--------|
-| `helpers.ts` | Shared factory fixtures: `makeEvent()`, `makeEvents()` |
+| `helpers.ts` | Factory functions: `makeEvent()`, `makeEvents()` |
+| `fixtures.ts` | 10 named scenarios with events + expected outcomes (shared with seed script) |
 | `status.test.ts` | Out-of-order resolution, timestamp sorting, tiebreaker, terminal detection |
 | `anomalies.test.ts` | Event-after-terminal, conflicting terminals, missing initiated, duplicate status, no false positives |
 | `ingestion.test.ts` | Idempotency, duplicate rejection, cross-transfer event_id reuse, invalid payloads |

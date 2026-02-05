@@ -282,7 +282,8 @@ archie/
 │   ├── app.js                     # Vanilla JS: fetch API, render DOM
 │   └── style.css                  # Minimal styling
 ├── tests/
-│   ├── helpers.ts                 # Shared factory fixtures (makeEvent, makeEvents)
+│   ├── helpers.ts                 # Factory functions (makeEvent, makeEvents)
+│   ├── fixtures.ts                # Named scenarios with events + expected outcomes
 │   ├── ingestion.test.ts
 │   ├── status.test.ts
 │   ├── anomalies.test.ts
