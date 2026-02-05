@@ -201,9 +201,7 @@ The Orchestrator needs a simple, stable contract. It should never parse raw even
 - Duplicate events with same `event_id` are idempotent regardless of payload
 
 ### Storage
-- In-memory store; data is lost on restart
-- Acceptable tradeoff for a 3-hour exercise
-- Production would use PostgreSQL with an immutable events table + materialized transfer view
+In-memory store; data is lost on restart. Acceptable tradeoff for the exercise. Production would use PostgreSQL with an immutable events table + materialized transfer view
 
 ### Scope
 - No authentication (internal tool)
@@ -325,13 +323,6 @@ For polling efficiency, the Orchestrator can use `ETag` / `If-None-Match` header
 
 ## Beyond MVP
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Stuck transfer detection | Optional | Flag non-terminal transfers idle for >24h |
-| Manual resolution | Optional | PATCH /transfers/:id/resolve with note |
-| Recompute from events | Included | POST /transfers/:id/recompute |
-| Seed data script | Included | Automatic via `run.sh`, or manually: `npx tsx scripts/seed.ts` |
-| Live auto-refresh | Included | UI polls every 10s, auto-refreshes both views on changes with passive notification |
-| Live update highlighting | Included | Transfers updated via live polling are highlighted for 5 seconds |
-| Relative timestamps | Included | "Updated" column and timeline show "X mn ago" instead of absolute dates |
-| Recent seed data | Included | Seed script generates timestamps relative to now (not hardcoded 2024 dates) |
+Recompute from events is included (was optional)
+POST /transfers/:id/recompute 
+UI polls every 10s, auto-refreshes both views on changes with passive notification. Transfers updated via live polling are highlighted for 5 seconds. "Updated" column and timeline show "X mn ago" instead of absolute dates
