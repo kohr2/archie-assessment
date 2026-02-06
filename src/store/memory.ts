@@ -50,8 +50,8 @@ export class MemoryStore {
             rejected_duplicates: [...rejected],
           };
           this.transfers.set(transfer_id, updatedTransfer);
-          this.version++;
-          this.affectedTransferIds.add(transfer_id);
+          // Note: version and affectedTransferIds are NOT updated for duplicates
+          // Duplicates are idempotent and don't count as meaningful state changes
         }
       }
       return {
